@@ -1,0 +1,95 @@
+version: '3.8'
+
+# Определение сервисов (контейнеров)
+services:
+  # PHP-FPM сервис
+  php:
+    build: ./php                # Используем Dockerfile из папки php
+    container_name: php-fpm
+    restart: unless-stopped     # Перезапускать контейнер при падении
+    working_dir: /var/www/html  # Рабочая директория внутри контейнера
+    volumes:
+      # Монтируем исходный код в контейнер
+      - ./src:/var/www/html
+      # Монтируем пользовательский php.ini (опционально)
+      - ./php/custom.ini:/usr/local/etc/php/conf.d/custom.ini
+    # Переменные окружения для подключения к MySQL
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: app_db
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: app_password
+    # Зависимости - ждем запуска MySQL
+    depends_on:
+      - mysql
+    networks:
+      - app-network
+
+  # Nginx сервис
+  nginx:
+    image: nginx:alpine         # Используем легкий alpine образ
+    container_name: nginx-web
+    restart: unless-stopped
+    ports:
+      # Пробрасываем порт 80 контейнера на порт 8080 хоста
+      - "8080:80"
+    volumes:
+      # Монтируем исходный код
+      - ./src:/var/www/html
+      # Монтируем конфигурацию Nginx
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php                     # Зависит от PHP-FPM
+    networks:
+      - app-network
+
+  # MySQL сервис
+  mysql:
+    image: mysql:8.0            # Используем MySQL 8.0
+    container_name: mysql-db
+    restart: unless-stopped
+    ports:
+      # Пробрасываем порт для доступа с хоста (опционально)
+      - "3306:3306"
+    environment:
+      # Параметры для инициализации базы данных
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: app_db
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: app_password
+    volumes:
+      # Сохраняем данные в volume для сохранения между перезапусками
+      - mysql-data:/var/lib/mysql
+      # Монтируем скрипт инициализации (опционально)
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    # Команда для настройки MySQL
+    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - app-network
+
+  # phpMyAdmin (опционально) для управления базой данных
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      UPLOAD_LIMIT: 128M
+    depends_on:
+      - mysql
+    networks:
+      - app-network
+
+# Определение volumes для хранения данных
+volumes:
+  mysql-data:
+    driver: local
+
+# Определение сети для связи между контейнерами
+networks:
+  app-network:
+    driver: bridge
