@@ -5,7 +5,7 @@
 header('Content-Type: text/html; charset=utf-8');
 
 // Получаем переменные окружения
-$mysql_host = getenv('MYSQL_HOST') ?: 'mysql';
+$mysql_host = getenv('MYSQL_HOST') ?: 'localhost';
 $mysql_port = getenv('MYSQL_PORT') ?: '3306';
 $mysql_database = getenv('MYSQL_DATABASE') ?: 'app_db';
 $mysql_user = getenv('MYSQL_USER') ?: 'app_user';
@@ -20,7 +20,7 @@ try {
         PDO::ATTR_EMULATE_PREPARES => false
     ]);
 
-    echo "<h1>✅ Подключение к MySQL успешно!</h1>";
+    echo "<h1>✅ !!!!Подключение к MySQL успешно!</h1>";
 
     // Пример запроса
     $stmt = $pdo->query("SELECT VERSION() as version");

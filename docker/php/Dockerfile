@@ -1,32 +1,30 @@
 # ./php/Dockerfile
 
-# Используем официальный образ PHP с FPM и alpine (легковесный)
 FROM php:8.2-fpm-alpine
 
 # Устанавливаем системные зависимости
-RUN apk update && apk add \
-    # Для установки расширений PHP \
+RUN apk update && apk add --no-cache  \
     autoconf g++ make \
-    # Для работы с MySQL\
     mysql-client \
-    # Другие утилиты\
     git curl zip unzip libzip-dev \
-    # Для GD расширения (работа с изображениями)\
     libpng-dev libjpeg-turbo-dev freetype-dev \
-    # Для intl расширения\
     icu-dev \
+    oniguruma-dev \
+    libxml2-dev \
     && rm -rf /var/cache/apk/*
 
 # Устанавливаем расширения PHP
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install \
-    pdo_mysql \          # Расширение для работы с MySQL через PDO\
-    mysqli \             # Расширение mysqli\
-    gd \                 # Работа с изображениями\
-    zip \                # Работа с zip архивами\
-    intl \               # Интернационализация\
-    opcache \            # Кэширование PHP кода\
-    bcmath               # Математические функции\
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg && \
+    docker-php-ext-configure intl && \
+    docker-php-ext-install \
+        pdo_mysql \
+        mysqli \
+        zip \
+        gd \
+        intl \
+        mbstring \
+        bcmath \
+        opcache
 
 # Устанавливаем Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
